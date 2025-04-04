@@ -77,8 +77,8 @@ This project has been developed in phases as outlined in the progress plan:
 - [x] Phase 3: Folder Structure Generator
 - [x] Phase 4: Proxy Generator
 - [x] Phase 5: Export Folder Watcher
-- [x] Phase 6: Playbook Upload Automation
-- [x] Phase 7: GUI Interface Implementation
+- [ ] Phase 6: Playbook Upload Automation
+- [ ] Phase 7: GUI Interface Implementation
 - [ ] Final Phase: Packaging & Scheduling
 
 ## Features
