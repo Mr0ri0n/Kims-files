@@ -11,9 +11,10 @@ from datetime import datetime
 
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QCalendarWidget, QFileDialog, QSizePolicy,
-    QScrollArea, QFrame
+    QScrollArea, QFrame, QCheckBox, QPushButton, QRadioButton
 )
 from PyQt6.QtCore import Qt, pyqtSignal, QDate
+from PyQt6.QtGui import QFont
 
 # Import UI template components
 from ..ui_template import (
@@ -66,27 +67,102 @@ class FolderStructureTab(QWidget):
         content_layout.setContentsMargins(5, 5, 5, 5)
         content_layout.setSpacing(15)
         
-        # Project settings group
+        # Project settings group with improved description
         self.project_group, self.project_layout = create_group_box("Project Settings")
         
-        # Project name input
+        # Add description of folder structure
+        structure_info = QLabel("Your project will be organized as: Base Directory / Date / Project Name / Folders")
+        structure_info.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+            margin-bottom: 10px;
+            padding: 5px;
+            background-color: #444444;
+            border-radius: 5px;
+        """)
+        self.project_layout.addWidget(structure_info)
+        
+        # Project name input with better description
         self.project_name_container, self.project_name_input = create_input_field("Project Name:")
-        self.project_name_input.setPlaceholderText("Enter project name")
+        self.project_name_input.setPlaceholderText("Enter project name (e.g. Client_ProjectTitle)")
         self.project_layout.addWidget(self.project_name_container)
         
-        # Base directory selector
+        # Base directory selector with better description
         self.base_dir_container, self.base_dir_label, self.base_dir_button = create_directory_selector("Base Directory:")
+        base_dir_info = QLabel("Select the root folder where all projects are stored")
+        base_dir_info.setStyleSheet("color: #AAAAAA; margin-left: 160px; font-size: 10pt;")
         self.project_layout.addWidget(self.base_dir_container)
+        self.project_layout.addWidget(base_dir_info)
         
-        # Date selection
+        # DaVinci template is always enabled if available
+        self.use_davinci_template = True  # Always try to use template if available
+        
+        # Date selection with improved description
         self.date_group, self.date_layout = create_group_box("Project Date")
         
-        # Use current date checkbox
-        self.use_current_date_checkbox = create_checkbox("Use current date")
-        self.use_current_date_checkbox.setChecked(True)
-        self.date_layout.addWidget(self.use_current_date_checkbox)
+        # Add date explanation
+        date_info = QLabel("The project will be created in a folder with the selected date")
+        date_info.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+            margin-bottom: 10px;
+        """)
+        self.date_layout.addWidget(date_info)
         
-        # Calendar widget (initially hidden)
+        # Current date display
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        current_date_container = QWidget()
+        current_date_layout = QHBoxLayout(current_date_container)
+        current_date_layout.setContentsMargins(5, 5, 5, 5)
+        
+        current_date_label = QLabel("Today's date:")
+        current_date_label.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+            font-weight: bold;
+        """)
+        
+        current_date_value = QLabel(current_date)
+        current_date_value.setStyleSheet("""
+            font-size: 11pt;
+            color: #FFFFFF;
+            background-color: #555555;
+            padding: 3px 8px;
+            border-radius: 4px;
+        """)
+        
+        current_date_layout.addWidget(current_date_label)
+        current_date_layout.addWidget(current_date_value)
+        current_date_layout.addStretch()
+        
+        self.date_layout.addWidget(current_date_container)
+        
+        # Use current date checkbox with better styling
+        date_options_container = QWidget()
+        date_options_layout = QVBoxLayout(date_options_container)
+        date_options_layout.setContentsMargins(5, 10, 5, 5)
+        date_options_layout.setSpacing(10)
+        
+        self.use_current_date_checkbox = create_checkbox("Use today's date (recommended)")
+        self.use_current_date_checkbox.setChecked(True)
+        self.use_current_date_checkbox.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+        """)
+        date_options_layout.addWidget(self.use_current_date_checkbox)
+        
+        # Custom date option
+        custom_date_label = QLabel("Or select a custom date:")
+        custom_date_label.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+            margin-top: 5px;
+        """)
+        date_options_layout.addWidget(custom_date_label)
+        
+        self.date_layout.addWidget(date_options_container)
+        
+        # Calendar widget with improved styling
         self.calendar_widget = QCalendarWidget()
         self.calendar_widget.setGridVisible(True)
         self.calendar_widget.setVerticalHeaderFormat(QCalendarWidget.VerticalHeaderFormat.NoVerticalHeader)
@@ -95,6 +171,9 @@ class FolderStructureTab(QWidget):
             QCalendarWidget {
                 background-color: #3E3E42;
                 color: #E0E0E0;
+                border: 1px solid #555555;
+                border-radius: 8px;
+                padding: 5px;
             }
             QCalendarWidget QAbstractItemView {
                 background-color: #2D2D30;
@@ -108,11 +187,43 @@ class FolderStructureTab(QWidget):
                 color: #E0E0E0;
                 background-color: #3E3E42;
             }
+            QCalendarWidget QToolButton:hover {
+                background-color: #555555;
+                border-radius: 4px;
+            }
         """)
         self.calendar_widget.setCurrentPage(QDate.currentDate().year(), QDate.currentDate().month())
         self.calendar_widget.setSelectedDate(QDate.currentDate())
         self.date_layout.addWidget(self.calendar_widget)
         self.calendar_widget.setVisible(False)
+        
+        # Selected date display (initially hidden)
+        self.selected_date_container = QWidget()
+        selected_date_layout = QHBoxLayout(self.selected_date_container)
+        selected_date_layout.setContentsMargins(5, 5, 5, 5)
+        
+        selected_date_label = QLabel("Selected date:")
+        selected_date_label.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+            font-weight: bold;
+        """)
+        
+        self.selected_date_value = QLabel(current_date)
+        self.selected_date_value.setStyleSheet("""
+            font-size: 11pt;
+            color: #FFFFFF;
+            background-color: #6A5ACD;
+            padding: 3px 8px;
+            border-radius: 4px;
+        """)
+        
+        selected_date_layout.addWidget(selected_date_label)
+        selected_date_layout.addWidget(self.selected_date_value)
+        selected_date_layout.addStretch()
+        
+        self.date_layout.addWidget(self.selected_date_container)
+        self.selected_date_container.setVisible(False)
         
         # Add date group to project layout
         self.project_layout.addWidget(self.date_group)
@@ -120,29 +231,57 @@ class FolderStructureTab(QWidget):
         # Add project group to content layout
         content_layout.addWidget(self.project_group)
         
-        # Folder structure group
+        # Folder structure group with improved description
         self.structure_group, self.structure_layout = create_group_box("Folder Structure")
         
-        # Checkboxes for folders to create
+        # Add description label
+        folder_description = QLabel("Select folders to create in your project directory:")
+        folder_description.setStyleSheet("""
+            font-size: 11pt;
+            color: #E0E0E0;
+            margin-bottom: 10px;
+        """)
+        self.structure_layout.addWidget(folder_description)
+        
+        # Create container for checkboxes with better visual organization
+        checkbox_container = QWidget()
+        checkbox_layout = QVBoxLayout(checkbox_container)
+        checkbox_layout.setContentsMargins(10, 5, 10, 5)
+        checkbox_layout.setSpacing(10)
+        
+        # Checkboxes for folders to create with descriptions
         self.footage_checkbox = create_checkbox("footage/")
         self.footage_checkbox.setChecked(True)
-        self.structure_layout.addWidget(self.footage_checkbox)
+        footage_description = QLabel("Raw camera footage files")
+        footage_description.setStyleSheet("color: #AAAAAA; margin-left: 25px; font-size: 10pt;")
+        checkbox_layout.addWidget(self.footage_checkbox)
+        checkbox_layout.addWidget(footage_description)
         
         self.proxies_checkbox = create_checkbox("proxies/")
         self.proxies_checkbox.setChecked(True)
-        self.structure_layout.addWidget(self.proxies_checkbox)
+        proxies_description = QLabel("Lower resolution proxy files for editing")
+        proxies_description.setStyleSheet("color: #AAAAAA; margin-left: 25px; font-size: 10pt;")
+        checkbox_layout.addWidget(self.proxies_checkbox)
+        checkbox_layout.addWidget(proxies_description)
         
         self.exports_checkbox = create_checkbox("exports/")
         self.exports_checkbox.setChecked(True)
-        self.structure_layout.addWidget(self.exports_checkbox)
+        exports_description = QLabel("Final rendered video files")
+        exports_description.setStyleSheet("color: #AAAAAA; margin-left: 25px; font-size: 10pt;")
+        checkbox_layout.addWidget(self.exports_checkbox)
+        checkbox_layout.addWidget(exports_description)
         
         self.logs_checkbox = create_checkbox("logs/")
         self.logs_checkbox.setChecked(True)
-        self.structure_layout.addWidget(self.logs_checkbox)
+        logs_description = QLabel("Processing and error logs")
+        logs_description.setStyleSheet("color: #AAAAAA; margin-left: 25px; font-size: 10pt;")
+        checkbox_layout.addWidget(self.logs_checkbox)
+        checkbox_layout.addWidget(logs_description)
         
-        # DaVinci template checkbox
-        self.davinci_checkbox = create_checkbox("Copy DaVinci template")
-        self.structure_layout.addWidget(self.davinci_checkbox)
+        # Template option moved to project settings section
+        
+        # Add the checkbox container to the structure layout
+        self.structure_layout.addWidget(checkbox_container)
         
         # Add structure group to content layout
         content_layout.addWidget(self.structure_group)
@@ -192,8 +331,11 @@ class FolderStructureTab(QWidget):
         self.create_button.clicked.connect(self.create_folder_structure)
         self.cancel_button.clicked.connect(self.cancel_creation)
         
-        # Connect checkbox
+        # Connect checkbox and calendar
         self.use_current_date_checkbox.stateChanged.connect(self.toggle_calendar)
+        self.calendar_widget.selectionChanged.connect(self.on_date_selected)
+        
+        # DaVinci button is already connected in init_ui
         
         # Connect thread signals
         self.log_message_signal.connect(self.log_message)
@@ -207,7 +349,16 @@ class FolderStructureTab(QWidget):
     
     def toggle_calendar(self, state):
         """Show or hide calendar based on checkbox state."""
-        self.calendar_widget.setVisible(state != Qt.CheckState.Checked)
+        use_current_date = (state == Qt.CheckState.Checked)
+        self.calendar_widget.setVisible(not use_current_date)
+        self.selected_date_container.setVisible(not use_current_date)
+        
+    def on_date_selected(self):
+        """Update the selected date display when a date is selected in the calendar."""
+        selected_date = self.calendar_widget.selectedDate().toString("yyyy-MM-dd")
+        self.selected_date_value.setText(selected_date)
+        
+    # Template handling is now automatic
     
     def load_config(self):
         """Load configuration from file."""
@@ -225,10 +376,10 @@ class FolderStructureTab(QWidget):
                 if raw_path:
                     self.base_dir_label.setText(raw_path)
                 
-                # Set DaVinci template checkbox based on config
+                # Set DaVinci template option based on config
                 davinci_template_path = config.get('davinci_template_path', '')
-                self.davinci_checkbox.setChecked(bool(davinci_template_path))
-                self.davinci_checkbox.setEnabled(bool(davinci_template_path))
+                # Template will be used automatically if available
+                self.use_davinci_template = bool(davinci_template_path)
         except Exception as e:
             self.log_message(f"Failed to load configuration: {e}")
     
@@ -246,27 +397,41 @@ class FolderStructureTab(QWidget):
                 show_error(self, "Error", "Please select a valid base directory")
                 return
             
-            # Get date
+            # Get date - use current date or custom selected date
             if self.use_current_date_checkbox.isChecked():
                 date_str = datetime.now().strftime("%Y-%m-%d")
+                self.log_message(f"Using today's date: {date_str}")
             else:
                 selected_date = self.calendar_widget.selectedDate()
                 date_str = f"{selected_date.year()}-{selected_date.month():02d}-{selected_date.day():02d}"
+                self.log_message(f"Using custom date: {date_str}")
             
             # Get folders to create
             folders = []
+            folder_names = []
+            
             if self.footage_checkbox.isChecked():
                 folders.append("footage")
+                folder_names.append("footage/")
+                
             if self.proxies_checkbox.isChecked():
                 folders.append("proxies")
+                folder_names.append("proxies/")
+                
             if self.exports_checkbox.isChecked():
                 folders.append("exports")
+                folder_names.append("exports/")
+                
             if self.logs_checkbox.isChecked():
                 folders.append("logs")
+                folder_names.append("logs/")
             
             if not folders:
                 show_error(self, "Error", "Please select at least one folder to create")
                 return
+                
+            # Log the folders that will be created
+            self.log_message(f"Will create folders: {', '.join(folder_names)}")
             
             # Update UI
             self.create_button.setEnabled(False)
@@ -304,8 +469,8 @@ class FolderStructureTab(QWidget):
                 os.makedirs(folder_path, exist_ok=True)
                 self.log_message_signal.emit(f"Created folder: {folder_path}")
             
-            # Copy DaVinci template if selected
-            if self.davinci_checkbox.isChecked():
+            # Copy DaVinci template if enabled
+            if self.use_davinci_template:
                 try:
                     # Get template path from config
                     script_dir = Path(__file__).resolve().parent.parent.parent.parent
