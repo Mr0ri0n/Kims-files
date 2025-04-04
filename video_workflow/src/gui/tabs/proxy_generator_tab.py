@@ -12,7 +12,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QListWidget,
     QListWidgetItem, QComboBox, QSpinBox, QFileDialog, QSizePolicy,
-    QScrollArea, QFrame
+    QScrollArea, QFrame, QLineEdit, QPushButton
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 
@@ -116,7 +116,7 @@ class ProxyGeneratorTab(QWidget):
         
         self.settings_layout.addWidget(codec_container)
         
-        # CRF value
+        # CRF value - custom implementation with visible controls
         crf_container = QWidget()
         crf_layout = QHBoxLayout(crf_container)
         crf_layout.setContentsMargins(10, 5, 10, 5)
@@ -135,26 +135,72 @@ class ProxyGeneratorTab(QWidget):
         crf_label.setFixedWidth(150)
         crf_layout.addWidget(crf_label)
         
-        self.crf_spin = QSpinBox()
-        self.crf_spin.setRange(0, 51)
-        self.crf_spin.setValue(23)
-        self.crf_spin.setStyleSheet("""
-            QSpinBox {
+        # Create a custom control with visible buttons
+        crf_control = QWidget()
+        crf_control_layout = QHBoxLayout(crf_control)
+        crf_control_layout.setContentsMargins(0, 0, 0, 0)
+        crf_control_layout.setSpacing(0)
+        
+        # Create the value display
+        self.crf_value = QLineEdit("23")
+        self.crf_value.setReadOnly(True)
+        self.crf_value.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.crf_value.setFixedWidth(50)
+        self.crf_value.setStyleSheet("""
+            QLineEdit {
                 font-size: 12pt;
                 min-height: 30px;
                 background-color: #3E3E42;
-                border: none;
-                border-bottom: 1px solid #6A5ACD;
-                border-radius: 8px;
-                padding: 2px 5px;
+                border: 1px solid #555555;
                 color: #E0E0E0;
-            }
-            QSpinBox::up-button, QSpinBox::down-button {
-                background-color: #6A5ACD;
-                border-radius: 4px;
+                padding: 2px 5px;
             }
         """)
-        crf_layout.addWidget(self.crf_spin)
+        
+        # Create up and down buttons with text
+        self.crf_up = QPushButton("+")
+        self.crf_up.setFixedSize(30, 30)
+        self.crf_up.setStyleSheet("""
+            QPushButton {
+                font-size: 16pt;
+                font-weight: bold;
+                background-color: #777777;
+                border: 1px solid #555555;
+                border-radius: 4px;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #999999;
+            }
+        """)
+        
+        self.crf_down = QPushButton("-")
+        self.crf_down.setFixedSize(30, 30)
+        self.crf_down.setStyleSheet("""
+            QPushButton {
+                font-size: 16pt;
+                font-weight: bold;
+                background-color: #777777;
+                border: 1px solid #555555;
+                border-radius: 4px;
+                color: white;
+            }
+            QPushButton:hover {
+                background-color: #999999;
+            }
+        """)
+        
+        # Add components to layout
+        crf_control_layout.addWidget(self.crf_down)
+        crf_control_layout.addWidget(self.crf_value)
+        crf_control_layout.addWidget(self.crf_up)
+        
+        # Connect signals
+        self.crf_value_int = 23  # Store the actual integer value
+        self.crf_up.clicked.connect(self.increment_crf)
+        self.crf_down.clicked.connect(self.decrement_crf)
+        
+        crf_layout.addWidget(crf_control)
         
         self.settings_layout.addWidget(crf_container)
         
@@ -322,13 +368,36 @@ class ProxyGeneratorTab(QWidget):
     def scan_directory(self, directory, extensions):
         """Scan directory for video files in a separate thread."""
         try:
+            # Show progress message
+            self.log_message_signal.emit("Starting file scan (this may take a moment)...")
+            
+            # Create a set of extensions for faster lookup
+            ext_set = set(extensions)
             count = 0
-            for root, _, files in os.walk(directory):
+            max_files = 1000  # Limit to prevent excessive scanning
+            
+            # Use a more efficient approach with a progress indicator
+            for root, dirs, files in os.walk(directory):
+                # Skip hidden directories (starting with .)
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                
+                # Update progress every 10 directories
+                if count % 10 == 0:
+                    self.log_message_signal.emit(f"Scanning... found {count} files so far")
+                
+                # Process files in this directory
                 for file in files:
-                    if any(file.lower().endswith(ext) for ext in extensions):
+                    # Check extension using set membership for speed
+                    if any(file.lower().endswith(ext) for ext in ext_set):
                         file_path = os.path.join(root, file)
                         self.file_found_signal.emit(file_path)
                         count += 1
+                        
+                        # Limit the number of files to prevent excessive scanning
+                        if count >= max_files:
+                            self.log_message_signal.emit(f"Reached limit of {max_files} files. Stopping scan.")
+                            self.log_message_signal.emit(f"Found {count} video files (limited to first {max_files})")
+                            return
             
             if count == 0:
                 self.log_message_signal.emit("No video files found")
@@ -377,7 +446,7 @@ class ProxyGeneratorTab(QWidget):
             
             # Get proxy settings
             codec = self.codec_combo.currentText()
-            crf = self.crf_spin.value()
+            crf = self.crf_value_int
             
             # Start proxy generation thread
             self.is_running = True
@@ -486,6 +555,18 @@ class ProxyGeneratorTab(QWidget):
         self.cancel_button.setEnabled(False)
         self.log_message("Cancelling proxy generation...")
     
+    def increment_crf(self):
+        """Increment the CRF value."""
+        if self.crf_value_int < 51:  # Maximum CRF value
+            self.crf_value_int += 1
+            self.crf_value.setText(str(self.crf_value_int))
+    
+    def decrement_crf(self):
+        """Decrement the CRF value."""
+        if self.crf_value_int > 0:  # Minimum CRF value
+            self.crf_value_int -= 1
+            self.crf_value.setText(str(self.crf_value_int))
+            
     def log_message(self, message):
         """Add a message to the log."""
         import datetime

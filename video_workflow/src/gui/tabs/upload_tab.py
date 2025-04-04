@@ -253,13 +253,36 @@ class UploadTab(QWidget):
     def scan_directory(self, directory, extensions):
         """Scan directory for files in a separate thread."""
         try:
+            # Show progress message
+            self.log_message_signal.emit("Starting file scan (this may take a moment)...")
+            
+            # Create a set of extensions for faster lookup
+            ext_set = set(extensions)
             count = 0
-            for root, _, files in os.walk(directory):
+            max_files = 1000  # Limit to prevent excessive scanning
+            
+            # Use a more efficient approach with a progress indicator
+            for root, dirs, files in os.walk(directory):
+                # Skip hidden directories (starting with .)
+                dirs[:] = [d for d in dirs if not d.startswith('.')]
+                
+                # Update progress every 10 directories
+                if count % 10 == 0:
+                    self.log_message_signal.emit(f"Scanning... found {count} files so far")
+                
+                # Process files in this directory
                 for file in files:
-                    if any(file.lower().endswith(ext) for ext in extensions):
+                    # Check extension using set membership for speed
+                    if any(file.lower().endswith(ext) for ext in ext_set):
                         file_path = os.path.join(root, file)
                         self.file_found_signal.emit(file_path)
                         count += 1
+                        
+                        # Limit the number of files to prevent excessive scanning
+                        if count >= max_files:
+                            self.log_message_signal.emit(f"Reached limit of {max_files} files. Stopping scan.")
+                            self.log_message_signal.emit(f"Found {count} files (limited to first {max_files})")
+                            return
             
             if count == 0:
                 self.log_message_signal.emit("No files found")
