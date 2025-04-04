@@ -1,5 +1,10 @@
 # Automated Video Workflow
 
+> ## ⚠️ WARNING ⚠️
+> ### THIS SOFTWARE IS NOT TESTED AND COMES WITH NO GUARANTEES
+> ### USE AT YOUR OWN RISK
+> ### NO WARRANTY IS PROVIDED OR IMPLIED
+
 A Python-based automation tool for video production workflows, handling everything from SD card import to final delivery. Features a modern, responsive GUI interface built with PyQt6. Designed to work seamlessly across Windows, macOS, and Linux platforms.
 
 ## Project Overview
