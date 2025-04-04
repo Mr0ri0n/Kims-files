@@ -1,0 +1,19 @@
+{
+    "raw_path": "D:/RAW",
+    "master_path": "D:/MASTER",
+    "ssd_name": "VIDEO_SSD",
+    "video_extensions": [".mp4", ".mov"],
+    "create_proxies": false,
+    "proxy_settings": {
+        "resolution": "1280x720",
+        "codec": "h264",
+        "crf": 23
+    },
+    "davinci_template_path": "",
+    "logging": {
+        "level": "INFO",
+        "file_path": "../logs/workflow.log",
+        "max_size_mb": 10,
+        "backup_count": 5
+    }
+}

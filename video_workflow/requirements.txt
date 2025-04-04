@@ -1,0 +1,10 @@
+# Core dependencies
+pathlib>=1.0.1
+watchdog>=2.1.9
+
+# For Windows SD card detection (optional)
+pywin32>=303; sys_platform == 'win32'
+
+# For future phases
+# ffmpeg-python>=0.2.0  # For proxy generation
+# PyQt6>=6.2.0  # For GUI interface
