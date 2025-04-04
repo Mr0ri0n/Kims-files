@@ -34,6 +34,7 @@ class SDDetectionTab(QWidget):
     copy_progress_signal = pyqtSignal(int, int)  # current, total
     copy_complete_signal = pyqtSignal()
     log_message_signal = pyqtSignal(str)
+    scan_progress_signal = pyqtSignal(int, int)  # current, total
     
     def __init__(self):
         super().__init__()
@@ -83,6 +84,11 @@ class SDDetectionTab(QWidget):
         # SD Card list
         self.sd_list = create_list_widget()
         self.detection_layout.addWidget(self.sd_list)
+        
+        # Scan progress bar
+        self.scan_progress_container, self.scan_progress_bar = create_progress_bar("Scan Progress")
+        self.scan_progress_container.setVisible(False)  # Hide initially
+        self.detection_layout.addWidget(self.scan_progress_container)
         
         # Button layout - using a flow layout approach with wrapping
         detection_button_container = QWidget()
@@ -191,6 +197,7 @@ class SDDetectionTab(QWidget):
         self.copy_progress_signal.connect(self.update_progress)
         self.copy_complete_signal.connect(self.on_copy_complete)
         self.log_message_signal.connect(self.log_message)
+        self.scan_progress_signal.connect(self.update_scan_progress)
     
     def scan_sd_cards(self):
         """Scan for SD cards."""
@@ -288,12 +295,75 @@ class SDDetectionTab(QWidget):
             # Get video extensions from config (placeholder)
             video_extensions = [".mp4", ".mov"]
             
-            # Walk the SD card directory
-            for root, _, files in os.walk(sd_card):
-                for file in files:
-                    if any(file.lower().endswith(ext) for ext in video_extensions):
-                        file_path = os.path.join(root, file)
-                        self.file_found_signal.emit(file_path)
+            # Create a set of extensions for faster lookup
+            ext_set = set(video_extensions)
+            
+            # Skip these directories completely for faster scanning
+            skip_dirs = {'.Trashes', '.fseventsd', '.Spotlight-V100', '$RECYCLE.BIN', 'System Volume Information'}
+            
+            # Skip files starting with these prefixes
+            skip_prefixes = {'._', '.DS_Store', 'Thumbs.db'}
+            
+            # Use a single pass approach for better performance
+            video_files = []
+            
+            # Set maximum depth to avoid excessive recursion
+            max_depth = 5
+            current_depth = 0
+            
+            def fast_scan(current_dir, depth):
+                # Stop if we've reached max depth
+                if depth > max_depth:
+                    return
+                
+                try:
+                    # Get all entries in the current directory
+                    entries = os.scandir(current_dir)
+                    
+                    for entry in entries:
+                        # Skip hidden and system directories
+                        if entry.is_dir():
+                            dirname = entry.name
+                            if dirname.startswith('.') or dirname in skip_dirs:
+                                continue
+                            # Recursively scan subdirectories
+                            fast_scan(entry.path, depth + 1)
+                        elif entry.is_file():
+                            filename = entry.name
+                            # Skip hidden and system files
+                            if any(filename.startswith(prefix) for prefix in skip_prefixes):
+                                continue
+                            # Check if it's a video file
+                            if any(filename.lower().endswith(ext) for ext in ext_set):
+                                video_files.append(entry.path)
+                except PermissionError:
+                    # Skip directories we don't have permission to access
+                    pass
+                except Exception as e:
+                    # Skip directories with other errors
+                    pass
+            
+            # Start the fast scan
+            fast_scan(sd_card, current_depth)
+            
+            # Get total number of files found
+            total_files = len(video_files)
+            
+            # Update progress bar with total
+            self.log_message_signal.emit(f"Found {total_files} video files to process")
+            
+            # Process files with progress updates
+            for i, file_path in enumerate(video_files):
+                # Update progress bar - update every 5 files for better performance
+                if i % 5 == 0 or i == total_files - 1:
+                    self.scan_progress_signal.emit(i + 1, total_files)
+                
+                # Add file to list
+                self.file_found_signal.emit(file_path)
+                
+            # Scan complete
+            self.log_message_signal.emit(f"Scan complete. Found {total_files} video files.")
+            
         except Exception as e:
             self.log_message_signal.emit(f"Error scanning for video files: {e}")
     
@@ -410,6 +480,19 @@ class SDDetectionTab(QWidget):
         """Update the progress bar."""
         progress = int((current / total) * 100) if total > 0 else 0
         self.progress_bar.setValue(progress)
+        
+    def update_scan_progress(self, current, total):
+        """Update scan progress bar."""
+        if not self.scan_progress_container.isVisible():
+            self.scan_progress_container.setVisible(True)
+        
+        progress = int((current / total) * 100) if total > 0 else 0
+        self.scan_progress_bar.setValue(progress)
+        
+        # Hide progress bar when scan is complete
+        if current >= total:
+            # Keep visible for a moment so user can see it completed
+            QTimer.singleShot(1000, lambda: self.scan_progress_container.setVisible(False))
     
     def on_copy_complete(self):
         """Handle copy completion."""
