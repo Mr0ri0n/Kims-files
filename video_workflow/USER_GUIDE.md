@@ -124,6 +124,81 @@ This feature helps you upload video files to cloud storage services.
    - The activity log will display detailed information about each file being uploaded
    - Click "Cancel" to stop the process if needed
 
+## Creating an Automated Workflow
+
+You can set up a fully automated video production workflow using this application. Here's how to configure each component for automation:
+
+### 1. Configure Your Environment
+
+1. **Initial Setup**:
+   - Ensure Python 3.13.0+ is installed
+   - Install all required dependencies: `pip install PyQt6==6.8.1`
+   - Configure your paths in `config/config.json` to match your system
+
+### 2. Automated SD Card Detection
+
+1. **Configure SD Card Monitoring**:
+   - Go to the SD Detection tab
+   - Set your preferred polling interval (how often to check for SD cards)
+   - Click "Start Monitoring"
+   - The system will now automatically detect SD cards when connected
+
+2. **Configure Auto-Import**:
+   - Set a default destination folder for imported files
+   - Enable the "Auto-import on detection" option if available
+   - When an SD card is detected, files will be automatically imported
+
+### 3. Automated Folder Structure Creation
+
+1. **Standard Project Structure**:
+   - In the Folder Structure tab, save your preferred folder structure as a template
+   - Configure your base directory for all projects
+   - Enable "Create structure on import" if available
+
+2. **DaVinci Resolve Integration**:
+   - The application will automatically include DaVinci Resolve templates if available
+   - No manual configuration needed for this feature
+
+### 4. Automated Proxy Generation
+
+1. **Configure Proxy Settings**:
+   - In the Proxy Generator tab, set your preferred proxy settings:
+     - Resolution (e.g., 1280x720)
+     - Codec (e.g., H.264)
+     - Quality settings
+   - Enable "Auto-generate proxies after import" if available
+
+### 5. Automated Export Monitoring
+
+1. **Configure Export Watcher**:
+   - In the Export Watcher tab, set the folder to monitor
+   - Configure how you want exported files to be processed
+   - Enable "Auto-start monitoring on launch" if available
+
+### 6. Automated Upload
+
+1. **Configure Upload Settings**:
+   - In the Upload tab, configure your cloud service credentials
+   - Set up default upload destinations
+   - Enable "Auto-upload after export" if available
+
+### 7. Running the Automated Workflow
+
+1. **Launch at System Startup**:
+   - Configure your operating system to launch the application at startup
+   - For macOS: Add the application to Login Items
+   - For Windows: Add a shortcut to the Startup folder
+
+2. **Command Line Automation**:
+   - Use command line arguments for headless operation:
+   ```
+   python src/main.py --auto-workflow
+   ```
+
+3. **Monitoring the Automated Process**:
+   - Check the Log Viewer tab for activity logs
+   - Configure email or notification alerts if available
+
 ## Tips and Best Practices
 
 1. **Consistent Naming**: Use consistent naming conventions for your projects
@@ -131,6 +206,7 @@ This feature helps you upload video files to cloud storage services.
 3. **Check Space**: Ensure you have enough disk space before generating proxies
 4. **SD Card Handling**: Always safely eject SD cards after importing files
 5. **Proxy Workflow**: Create proxies immediately after importing footage for the best workflow
+6. **Test Your Workflow**: Always test your automated workflow with sample data before using it in production
 
 ## Troubleshooting
 
