@@ -11,14 +11,16 @@ A Python-based automation tool for video production workflows, handling everythi
 
 This project automates the video production workflow with the following features:
 
-- SD card detection and automatic file import
-- Organized folder structure creation with cross-platform path handling
+- SD card detection and automatic file import with progress tracking
+- Optimized file scanning with significant performance improvements
+- Organized folder structure creation with automatic DaVinci Resolve template integration
 - Optional proxy file generation with customizable settings
 - Export folder monitoring
 - Automatic upload to delivery platforms
 - Modern GUI interface with dark theme and responsive layout
 - Comprehensive logging system
 - Full cross-platform compatibility (Windows, macOS, Linux)
+- Detailed user guide with step-by-step instructions
 
 ## Project Structure
 
@@ -67,6 +69,7 @@ This project automates the video production workflow with the following features
    ```
    python src/main.py
    ```
+5. For detailed usage instructions, refer to the [User Guide](USER_GUIDE.md)
 
 ## Development Progress
 
@@ -93,12 +96,16 @@ This project has been developed in phases as outlined in the progress plan:
 - Automatic detection of SD cards when connected
 - Monitoring of SD card status and available space
 - Configurable polling interval
+- Progress bar for file scanning operations
+- Optimized scanning algorithm for faster performance
+- Smart filtering of system and metadata files
 
 ### Folder Structure Generator
 - Create organized project folders with customizable structure
 - Date-based project organization
 - Cross-platform path handling using Python's pathlib
-- Optional DaVinci Resolve template integration
+- Automatic DaVinci Resolve template integration when available
+- Simplified user interface with clear folder options
 
 ### Proxy Generator
 - Automatic proxy file generation using ffmpeg
